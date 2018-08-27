@@ -1,0 +1,27 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #222;
+  padding: 10px;
+  color: white;
+}
+
+.App-title {
+  font-size: 1.5em;
+}
+
+.pattern-lock {
+  padding: 30px 50px;
+  width: 800px;
+  margin: 0 auto;
+}
+.pattern-lock .grid-holder {
+  float: left;
+  width: 50%;
+}
+
+.pattern-lock .grid-holder .grid-container {
+  margin: 0 auto;
+}

@@ -1,0 +1,65 @@
+.grid-container {
+    background:#3377DD;  
+    -ms-touch-action: none;
+    width: 310px;
+    height: 310px;
+    position: relative;
+}
+
+.grid-container + .grid-container {
+    margin-left: 30px;
+}
+
+.grid { 
+    position: relative; 
+    cursor: pointer;
+    padding: 20px;
+    margin: 0;
+}
+.grid ul, 
+.grid li {
+	list-style: none;
+}
+.line {
+	border-radius: 50%;
+	height: 10px;
+	background-color:#AAAAAA;
+	position: absolute;
+	transform-origin: 5px 5px;
+	-ms-transform-origin: 5px 5px;
+	-webkit-transform-origin: 5px 5px;
+}
+.point {
+    margin : 20px;
+    width : 50px;
+    height : 50px;
+    border-radius: 25px; 
+	position:relative;
+	float: left;
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+ }
+
+.point.touched {
+	border:3px solid #00aa00;
+}
+
+.point.error {
+	border:3px solid #ba1b26;
+}
+
+.point .dot {
+	background: #ffffff;
+    width: 10px;
+    height: 10px;
+	border-radius: 50%;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-top: -5px;
+	margin-left: -5px;
+}
+
+.controls {
+	padding: 5px;
+}
