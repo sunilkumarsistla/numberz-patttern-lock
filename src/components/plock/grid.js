@@ -132,13 +132,27 @@ class Grid2 extends Component {
 
     keepTracking = (e) => {
         e.preventDefault();
-        const x = e.clientX || e.originalEvent.touches[0].clientX,
-            y = e.clientY || e.originalEvent.touches[0].clientY;
+        const x = (e.clientX || e.originalEvent.touches[0].clientX) - this.container.offsetLeft,
+            y =  (e.clientY || e.originalEvent.touches[0].clientY) - this.container.offsetTop;
 
-        if(this.state.pattern.length > 0) {
-            var lastLine = this.state.lines[this.state.lines.length - 1];
+        if(this.lastPt) {
+            
+            const { width, angle } = this.getLineStyle(
+                this.lastPt.offsetLeft,
+                this.lastPt.offsetTop, 
+                x, 
+                y);
 
-        
+            var line = { style: { 
+                width: width + 'px',
+                transform: 'rotate(' + angle + 'deg)', 
+                top: this.lastPt.offsetTop + this.option.radius - 5 + 'px', 
+                left: this.lastPt.offsetLeft + this.option.radius - 5 + 'px' }};
+
+            this.setState({
+                ...this.state,
+                aLine: line
+            });
         }
     }
 
@@ -154,7 +168,6 @@ class Grid2 extends Component {
         this.setState({
             aLine: undefined
         });
-        console.log(pattern);
         const encodedPattern = textEncoder.encode(pattern);
         this.props.onComplete(encodedPattern);
     }
@@ -163,10 +176,9 @@ class Grid2 extends Component {
         var xDiff = x2 - x1,
             yDiff = y2 - y1;
 
-        console.log(x1,y1,x2,y2);
         return {
-            width: Math.ceil(Math.sqrt(xDiff * xDiff + yDiff * yDiff)) + 10 + 'px',
-            transform: 'rotate(' + Math.round((Math.atan2(yDiff, xDiff) * 180) / Math.PI) + 'deg)'
+            width: Math.ceil(Math.sqrt(xDiff * xDiff + yDiff * yDiff)),
+            angle: Math.round((Math.atan2(yDiff, xDiff) * 180) / Math.PI)
         };
     }
 
@@ -212,15 +224,18 @@ class Grid2 extends Component {
             }
         }
 
-        console.log(this.state.pattern, this.state.lines);
         // build line for the points
         if(this.lastPt) {
             const ele = e.currentTarget;
-            var line = { style: { ...this.getLineStyle(
+            const { width, angle } = this.getLineStyle(
                 this.lastPt.offsetLeft,
                 this.lastPt.offsetTop, 
                 ele.offsetLeft, 
-                ele.offsetTop), 
+                ele.offsetTop);
+
+            var line = { style: { 
+                width: width + 10 + 'px',
+                transform: 'rotate(' + angle + 'deg)', 
                 top: this.lastPt.offsetTop + this.option.radius - 5 + 'px', 
                 left: this.lastPt.offsetLeft + this.option.radius - 5 + 'px' }};
 
