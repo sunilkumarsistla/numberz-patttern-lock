@@ -21,13 +21,14 @@
 	list-style: none;
 }
 .line {
-	border-radius: 50%;
+	border-radius: 5px;
 	height: 10px;
-	background-color:#AAAAAA;
+	background-color:#fff;
 	position: absolute;
 	transform-origin: 5px 5px;
 	-ms-transform-origin: 5px 5px;
 	-webkit-transform-origin: 5px 5px;
+	opacity: 0.4;
 }
 .point {
     margin : 20px;
@@ -58,6 +59,7 @@
 	left: 50%;
 	margin-top: -5px;
 	margin-left: -5px;
+	opacity: 0.6;
 }
 
 .controls {

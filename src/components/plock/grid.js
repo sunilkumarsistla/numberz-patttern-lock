@@ -20,6 +20,7 @@ const eventlookup = {
 
 class Grid2 extends Component {
     option; container; evtMap; isTracking;
+    lastPt;
 
     //react component cycle
     constructor(props) {
@@ -53,7 +54,7 @@ class Grid2 extends Component {
 
     render = () => {
         const points = this.state.points.map(p => <Point addNode={this.mouseOnPoint} ref={e => p.ref = e} key={p.id} model={p} />);
-        const lines = this.state.lines.map(l => <Line key={l.id} model={l} />);
+        const lines = this.state.lines.map((l, i) => <Line key={i} model={l} />);
         const { aLine } = this.state;
     
         //set style for container
@@ -97,6 +98,7 @@ class Grid2 extends Component {
             });
         }
 
+        this.lastPt = null;
         this.setState(...this.state,
             {
                 points: gridPoints,     
@@ -110,6 +112,8 @@ class Grid2 extends Component {
     mouseOnPoint = (e, p) => {
         e.preventDefault();
         if(!this.isTracking || p.isMarked) return;
+        const x = e.clientX || e.originalEvent.touches[0].clientX,
+            y = e.clientY || e.originalEvent.touches[0].clientY;
             
         this.addNode(e, p);
     }
@@ -130,6 +134,12 @@ class Grid2 extends Component {
         e.preventDefault();
         const x = e.clientX || e.originalEvent.touches[0].clientX,
             y = e.clientY || e.originalEvent.touches[0].clientY;
+
+        if(this.state.pattern.length > 0) {
+            var lastLine = this.state.lines[this.state.lines.length - 1];
+
+        
+        }
     }
 
     stopTracking = (e) => {
@@ -152,8 +162,10 @@ class Grid2 extends Component {
     getLineStyle(x1, y1, x2, y2) {
         var xDiff = x2 - x1,
             yDiff = y2 - y1;
+
+        console.log(x1,y1,x2,y2);
         return {
-            width: (Math.ceil(Math.sqrt(xDiff * xDiff + yDiff * yDiff)) + 10) + 'px',
+            width: Math.ceil(Math.sqrt(xDiff * xDiff + yDiff * yDiff)) + 10 + 'px',
             transform: 'rotate(' + Math.round((Math.atan2(yDiff, xDiff) * 180) / Math.PI) + 'deg)'
         };
     }
@@ -200,15 +212,31 @@ class Grid2 extends Component {
             }
         }
 
+        console.log(this.state.pattern, this.state.lines);
+        // build line for the points
+        if(this.lastPt) {
+            const ele = e.currentTarget;
+            var line = { style: { ...this.getLineStyle(
+                this.lastPt.offsetLeft,
+                this.lastPt.offsetTop, 
+                ele.offsetLeft, 
+                ele.offsetTop), 
+                top: this.lastPt.offsetTop + this.option.radius - 5 + 'px', 
+                left: this.lastPt.offsetLeft + this.option.radius - 5 + 'px' }};
+
+            lines = [...lines, line];
+        }
+
         points[p.id-1] = {...points[p.id-1], isMarked: true};
         pattern = [...pattern, p.id];
+        this.lastPt = e.currentTarget;
 
         //todo: prepare lines for added nodes
         this.setState({
             ...this.state,
             pattern: pattern,
             points: points,
-            lines: []
+            lines: lines
         });
     }
 }
