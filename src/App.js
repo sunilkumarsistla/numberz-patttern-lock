@@ -19,7 +19,7 @@ class App extends Component {
     return (
       <div className="App">
         <header className="App-header">
-          <h1 className="App-title">Welcome to React</h1>
+          <h1 className="App-title">Pattern Lock</h1>
         </header>
         <div className={'pattern-lock'}>
           <div className={'grid-holder'}>

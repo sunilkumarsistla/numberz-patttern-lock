@@ -1,74 +1,209 @@
 import React, { Component } from 'react';
-import Point from './point';
+import textEncoder from '../../providers/base64encoder';
+//import classNames from 'classnames';
 
-const defaults = {
-    gridW: 3,
-    gridH: 3
+import Point from './point';
+import Line from './line';
+
+const nullFunc = () => {};
+const defaultOptions = {
+    matrix: [3, 3],
+    margin: 20,
+    radius: 25,
+    isError: false
+};
+
+const eventlookup = {
+    'mousedown': { track: 'mousemove', stop: 'mouseup' },
+    'touchstart': { track: 'touchmove', stop: 'touchend' },
 }
 
-class Grid extends Component {
-    
-    ele; //grid
-    isTracking; // flag to see if user is drawing
-    path; // tracked points by user currently
-    defPoints; // default point object -- easy to reset counter
+class Grid2 extends Component {
+    option; container; evtMap; isTracking;
 
+    //react component cycle
     constructor(props) {
         super(props);
-        this.state = {
-            pattern: [],
-            points: [],
-
-            lines: [],
-            aLine: {}
+        this.option = props.option || {};
+        var defaultsActions = {
+            onDraw: nullFunc
         };
+        this.option = { ...defaultOptions, ...defaultsActions, ...this.option };
+        this.wrapLeft = this.wrapTop = 0;
+        this.line = {};
 
-        this.path = [];
-        this.defPoints = [];
-        const totPoints = defaults.gridW * defaults.gridH;
-        for(let i=0;i<totPoints;i++) {
-            this.defPoints.push({ id: i+1, isMarked: false, isError: false });
+        // set default state
+        var gridPoints = [];
+        const gridSize = this.option.matrix[0] * this.option.matrix[1];
+        for(let i=0;i<gridSize; i++) {
+            gridPoints.push({
+                id: (i + 1),
+                isTouched: false,
+                isError: false,
+                ref: undefined
+            });
         }
-        this.state.points = [...this.defPoints];
-        this.ele = React.createRef();
+        this.state = {
+            points: gridPoints,     
+            lines: [],
+            arbLine: [],
+            pattern: [],
+        }
     }
 
-    componentDidMount() {
-        this.ele.addEventListener('mousedown', this.startTracking);
+    render = () => {
+        const points = this.state.points.map(p => <Point addNode={this.mouseOnPoint} ref={e => p.ref = e} key={p.id} model={p} />);
+        const lines = this.state.lines.map(l => <Line key={l.id} model={l} />);
+        const { aLine } = this.state;
+    
+        //set style for container
+        const { matrix, margin, radius } = this.option;
+        const containerStyle = { width: (matrix[1] * (radius * 2 + margin * 2) + margin * 2) + 'px',
+           height:  (matrix[0] * (radius * 2 + margin * 2) + margin * 2) + 'px'
+        };
+
+        return(
+            <div className="grid-container" style={containerStyle} ref={ ele => this.container = ele } >
+                <ul className="grid">{points}</ul>
+                {lines}
+                <Line model={aLine}/>
+            </div>
+        );
+    }    
+
+    componentDidMount = () => {
+        this.wrapLeft = 0;
+        this.wrapTop = 0;
+        for(const k in eventlookup) {
+            this.container.addEventListener(k, this.startTracking);
+        }
+    }
+
+    componentWillUnmount = () => {
+        for(const k in eventlookup) {
+            this.container.removeEventListener(k, this.startTracking);
+        }
     }
     
-    getLengthAndAngleForLine = (x1, x2, y1, y2) => {
+    reset = () => {
+        var gridPoints = [];
+        const gridSize = this.option.matrix[0] * this.option.matrix[1];
+        for(let i=0;i<gridSize; i++) {
+            gridPoints.push({
+                id: (i + 1),
+                isTouched: false,
+                isError: false,
+                ref: undefined
+            });
+        }
+
+        this.setState(...this.state,
+            {
+                points: gridPoints,     
+                lines: [],
+                aLine: null,
+                pattern: [],
+            });
+    }
+
+    // events
+    mouseOnPoint = (e, p) => {
+        e.preventDefault();
+        if(!this.isTracking || p.isMarked) return;
+            
+        this.addNode(e, p);
+    }
+
+    startTracking = (e) => {
+        e.preventDefault();
+        if(!eventlookup.hasOwnProperty(e.type)) return;
+
+        this.evtMap = eventlookup[e.type];
+        this.container.addEventListener(this.evtMap.track, this.keepTracking);
+        document.addEventListener(this.evtMap.stop, this.stopTracking);
+
+        this.isTracking = true;
+        this.reset();
+    }
+
+    keepTracking = (e) => {
+        e.preventDefault();
+        const x = e.clientX || e.originalEvent.touches[0].clientX,
+            y = e.clientY || e.originalEvent.touches[0].clientY;
+    }
+
+    stopTracking = (e) => {
+        e.preventDefault();
+        this.container.removeEventListener(this.evtMap.track, this.keepTracking);
+        document.removeEventListener(this.evtMap.stop, this.stopTracking);
+        this.isTracking = false;
+        
+        const pattern = this.state.pattern.toString();
+        if(!pattern) return;
+
+        this.setState({
+            aLine: undefined
+        });
+        console.log(pattern);
+        const encodedPattern = textEncoder.encode(pattern);
+        this.props.onComplete(encodedPattern);
+    }
+
+    getLineStyle(x1, y1, x2, y2) {
         var xDiff = x2 - x1,
             yDiff = y2 - y1;
-
         return {
-            length: Math.ceil(Math.sqrt(xDiff * xDiff + yDiff * yDiff)),
-            angle: Math.round((Math.atan2(yDiff, xDiff) * 180) / Math.PI)
+            width: (Math.ceil(Math.sqrt(xDiff * xDiff + yDiff * yDiff)) + 10) + 'px',
+            transform: 'rotate(' + Math.round((Math.atan2(yDiff, xDiff) * 180) / Math.PI) + 'deg)'
         };
     }
 
-    addNode = p => {
+    getRowIndex = id => Math.floor((id - 1) / this.option.matrix[0]);
+    getColIndex = id => (id - 1) % this.option.matrix[0];
+
+    addNode = (e, p) => {
         if(p.isMarked) return;
-                
-        //todo: check if there is something in between the nodes
+
         var pattern = [...this.state.pattern];
         var points = [...this.state.points];
+        var lines = [...this.state.lines];
 
         if(this.state.pattern.length > 0) {
-            // we always have only one middle point in this scenario so look for average
             const lastId = this.state.pattern[this.state.pattern.length-1];
-            const avg = (lastId + p.id)/2, diff = Math.abs(lastId - p.id);
-            if(diff === 2 || diff === 6 || avg === 5 && !points[avg-1].isMarked) {
-                points[avg-1] = {...points[avg-1], isMarked: true};
-                pattern = [...pattern, avg];
+
+            // check for any jumps if not add next point directly
+            const rs = Math.abs(this.getRowIndex(p.id) - this.getRowIndex(lastId));
+            const cs = Math.abs(this.getColIndex(p.id) - this.getColIndex(lastId));
+            
+            // find what kind of shift it is
+            const isRS = rs > 1 && cs === 0,
+                isCS = cs > 1 && rs === 0,
+                isDS = rs === cs && rs > 1;
+
+            if(isRS || isCS || isDS) {
+                // steps for each kind of shift
+                const rowStep = this.option.matrix[0];
+                const colStep = 1;
+                const diagStep = Math.abs(lastId - p.id) / rs;
+
+                var cp = lastId;
+                while(cp !== p.id) {
+                    if (this.state.pattern.indexOf(cp) === -1) {
+                        points[cp-1] = {...points[cp-1], isMarked: true};
+                        pattern.push(cp);
+                    }
+                    if(p.id > cp)
+                        cp += isDS ? diagStep : (isCS ? colStep : rowStep);
+                    else 
+                        cp -= isDS ? diagStep : (isCS ? colStep : rowStep);
+                }
             }
         }
 
         points[p.id-1] = {...points[p.id-1], isMarked: true};
         pattern = [...pattern, p.id];
 
-        // prepare lines for added nodes
-        
+        //todo: prepare lines for added nodes
         this.setState({
             ...this.state,
             pattern: pattern,
@@ -76,70 +211,6 @@ class Grid extends Component {
             lines: []
         });
     }
-
-    complete = () => {
-        this.props.onComplete(this.state.pattern);
-        this.resetGrid();
-    }
-
-    resetGrid = () => {
-        this.setState({
-            pattern: [],
-            points: [...this.defPoints],
-        });
-        this.path = [];
-        this.isTracking = false;
-    }
-
-    startTracking = e => {
-        e.preventDefault();
-        this.resetGrid();
-        this.ele.addEventListener("mousemove", this.trackingHandler);
-        document.addEventListener("mouseup", this.endTracking);
-        this.isTracking = true;
-    }
-
-    trackingHandler = e => {
-        e.preventDefault();
-        var x = e.clientX || e.originalEvent.touches[0].clientX,
-        y = e.clientY || e.originalEvent.touches[0].clientY;
-
-        if(this.path.length > 0) {
-            const lastP = this.path[this.state.path.length-1];
-        }
-    }
-
-    mouseOnPoint = (e, p) => {
-        if(!this.isTracking || p.isMarked) { 
-            e.preventDefault();
-            return;
-        }
-        this.addNode(p);
-    }
-
-    endTracking = e => {
-        e.preventDefault();
-        this.isTracking = false;
-        this.ele.removeEventListener('mousemove', this.trackingHandler);
-        document.removeEventListener("mouseup", this.endTracking);
-
-        this.complete();
-    }
-
-    render() {
-        const gPoints = this.state.points.map((x) => (<Point key={x.id} model={x} addNode={this.mouseOnPoint}/>));
-        const gLines = this.state.lines.map((x, i) => (<div key={i} className="line" style={x.style}></div>));
-        return (
-            <div>
-                <div className={'grid-container'} ref={e => this.ele = e}>
-                    <ul className={'grid'}>
-                        {gPoints}
-                    </ul>
-                    {gLines}
-                </div>
-            </div>
-        );
-    }
 }
 
-export default Grid;
+export default Grid2;

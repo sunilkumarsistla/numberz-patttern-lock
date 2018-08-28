@@ -9,13 +9,14 @@ class Point extends Component {
             'touched': model.isMarked,
             'error': model.isError
         });
-
-        return (<li onMouseDown={e=>addNode.bind(this)(e, model)}
-                    onMouseEnter={e=>addNode.bind(this)(e, model)}
-                    data-k={model.id} 
-                    className={btnClass}>
-                    <div className={'dot'}></div>
-                </li>);
+        
+        return model ? (
+            <li onMouseDown={e=>addNode(e, model)}  
+                onMouseMove={e=>addNode(e, model)} 
+                className={btnClass}>
+                <div className="dot"></div>
+            </li>
+        ) : null;
     }    
 }
 

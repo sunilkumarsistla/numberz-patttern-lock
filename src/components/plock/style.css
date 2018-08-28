@@ -1,9 +1,9 @@
 .grid-container {
     background:#3377DD;  
     -ms-touch-action: none;
-    width: 310px;
-    height: 310px;
-    position: relative;
+	position: relative;
+	height: 310px;
+	width: 310px;
 }
 
 .grid-container + .grid-container {
